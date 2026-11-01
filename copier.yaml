@@ -1,0 +1,58 @@
+# copier.yaml — Quantilica Fetcher Template
+_min_copier_version: "9.0.0"
+
+source_id:
+  type: str
+  help: Identificador canônico da fonte na CLI (ex: 'ons', 'loterias', 'sigtap')
+  validator: >-
+    {% if not (source_id | regex_search('^[a-z0-9]+(-[a-z0-9]+)*$')) %}
+    source_id deve ser minúsculo, com hífens opcionais (kebab-case)
+    {% endif %}
+
+source_name:
+  type: str
+  help: Nome oficial por extenso da instituição/fonte (ex: 'Operador Nacional do Sistema Elétrico')
+
+package_name:
+  type: str
+  default: "{{ source_id }}-fetcher"
+  help: Nome do pacote Python / repositório
+
+package_slug:
+  type: str
+  default: "{{ source_id | replace('-', '_') }}_fetcher"
+  help: Nome do módulo Python no diretório src/
+
+description:
+  type: str
+  default: "Coletor e conversor Lake Hive de dados abertos de {{ source_name }}"
+  help: Descrição resumida do pacote para pyproject.toml e README
+
+domain:
+  type: str
+  default: "{{ source_id }}"
+  help: Domínio temático em docs/docs/fontes/<dominio>/ (ex: 'energia', 'loterias', 'saude')
+
+author_name:
+  type: str
+  default: "Komesu, D.K."
+  help: Nome do autor
+
+author_email:
+  type: str
+  default: "daniel@dkko.me"
+  help: Email do autor
+
+has_lake:
+  type: bool
+  default: true
+  help: O pacote inclui conversor para o Universal Hive Parquet Lake?
+
+protocol:
+  type: str
+  default: "http"
+  choices:
+    - "http"
+    - "ftp"
+    - "ckan"
+  help: Protocolo ou padrão primário de coleta da fonte

@@ -1,0 +1,26 @@
+"""Tests for {{ package_name }} lake converter."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from {{ package_slug }}.lake import converter
+
+
+def test_converter_metadata() -> None:
+    """Verify converter source_id and dataset list."""
+    assert converter.source_id == "{{ source_id }}"
+    assert isinstance(converter.datasets(), list)
+
+
+def test_converter_empty_dir(tmp_path: Path) -> None:
+    """Test convert with empty input directory."""
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    lake_dir = tmp_path / "lake"
+    lake_dir.mkdir()
+
+    res = converter.convert(raw_dir, lake_dir)
+    assert res.converted == 0
+    assert res.skipped == 0
+    assert not res.errors

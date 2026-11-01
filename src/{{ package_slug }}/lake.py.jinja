@@ -1,0 +1,22 @@
+"""Universal Hive Parquet Lake converter for {{ package_name }}."""
+
+from __future__ import annotations
+
+try:
+    from quantilica.analytics.lake import DatasetSpec, SpecLakeConverter
+except ImportError as exc:
+    raise ImportError(
+        "{{ package_slug }}.lake requer o extra 'analysis': "
+        "uv add '{{ package_name }}[analysis]' "
+        "--index https://index.quantilica.com/simple/"
+    ) from exc
+
+from {{ package_slug }} import __version__
+
+SOURCE_ID = "{{ source_id }}"
+
+SPECS: dict[str, DatasetSpec] = {
+    # Declarar especificações de conversão DatasetSpec por dataset_id
+}
+
+converter = SpecLakeConverter(SOURCE_ID, SPECS, version=__version__)
