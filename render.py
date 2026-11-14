@@ -29,6 +29,14 @@ def render_template(
     author_email: str = "daniel@dkko.me",
     has_lake: bool = True,
     protocol: str = "http",
+    orgao: str = "Órgão responsável pelos dados",
+    licenca: str = (
+        "Sem licença declarada; dados públicos pela Lei 12.527/2011 (LAI) "
+        "e Decreto 8.777/2016"
+    ),
+    homepage: str = "https://www.gov.br/",
+    cadencia: str = "monthly",
+    dominio: str = "",
 ) -> None:
     package_name = package_name or f"{source_id}-fetcher"
     package_slug = package_slug or f"{source_id.replace('-', '_')}_fetcher"
@@ -49,6 +57,11 @@ def render_template(
         "author_email": author_email,
         "has_lake": has_lake,
         "protocol": protocol,
+        "orgao": orgao,
+        "licenca": licenca,
+        "homepage": homepage,
+        "cadencia": cadencia,
+        "dominio": dominio,
         "now_date": dt.date.today().isoformat(),
         "now": lambda _tz, fmt: dt.date.today().strftime(fmt),
     }
@@ -64,9 +77,14 @@ def render_template(
         f"_src_path: {TEMPLATE_DIR}",
         f"author_email: {author_email}",
         f"author_name: {author_name}",
+        f"cadencia: {cadencia}",
         f"description: {description}",
         f"domain: {domain}",
+        f"dominio: '{dominio}'",
         f"has_lake: {str(has_lake).lower()}",
+        f"homepage: {homepage}",
+        f"licenca: {licenca}",
+        f"orgao: {orgao}",
         f"package_name: {package_name}",
         f"package_slug: {package_slug}",
         f"protocol: {protocol}",
@@ -80,6 +98,8 @@ def render_template(
     for root, _dirs, files in os.walk(TEMPLATE_DIR):
         rel_root = Path(root).relative_to(TEMPLATE_DIR)
         if any(part.startswith(".") for part in rel_root.parts if part != ".github"):
+            continue
+        if rel_root.parts and rel_root.parts[0] in ("tests_template", "__pycache__"):
             continue
         if "render.py" in files and rel_root == Path("."):
             pass
@@ -118,6 +138,10 @@ def main() -> None:
     parser.add_argument("--description")
     parser.add_argument("--domain")
     parser.add_argument("--protocol", default="http")
+    parser.add_argument("--orgao", default="Órgão responsável pelos dados")
+    parser.add_argument("--homepage", default="https://www.gov.br/")
+    parser.add_argument("--cadencia", default="monthly")
+    parser.add_argument("--dominio", default="")
     args = parser.parse_args()
 
     dest = Path(args.dest)
@@ -129,6 +153,10 @@ def main() -> None:
         description=args.description,
         domain=args.domain,
         protocol=args.protocol,
+        orgao=args.orgao,
+        homepage=args.homepage,
+        cadencia=args.cadencia,
+        dominio=args.dominio,
     )
     print(f"Rendered template for {args.source_id} to {dest}")
 

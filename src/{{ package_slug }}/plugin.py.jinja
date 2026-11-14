@@ -1,3 +1,14 @@
+{#- Literal de string Python entre aspas duplas, com escape, quebrado em linhas curtas. -#}
+{%- macro lit(valor, recuo) -%}
+{%- set esc = valor | replace('\\', '\\\\') | replace('"', '\\"') -%}
+{%- if esc | length > 60 -%}
+(
+{{ ' ' * (recuo + 4) }}"{{ esc | wordwrap(60, false, ' "\n' ~ ' ' * (recuo + 4) ~ '"') }}"
+{{ ' ' * recuo }})
+{%- else -%}
+"{{ esc }}"
+{%- endif -%}
+{%- endmacro -%}
 """Typer plugin for quantilica-cli integration."""
 
 from __future__ import annotations
@@ -7,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from quantilica.cli.sdk import FetcherApp, make_resolve_groups
+from quantilica.core.registry import FetcherInfo
 
 from .catalog import GROUP_ALIASES, GROUPS, list_datasets
 from .storage import DataRepository
@@ -25,7 +37,18 @@ def path_builder(
 
 fetcher = FetcherApp(
     name="{{ source_id }}",
-    help="{{ description }}",
+    help={{ lit(description, 4) }},
+    info=FetcherInfo(
+        id="{{ source_id }}",
+        nome={{ lit(source_name, 8) }},
+        orgao={{ lit(orgao, 8) }},
+        licenca={{ lit(licenca, 8) }},
+        homepage="{{ homepage }}",
+        cadencia="{{ cadencia }}",
+{%- if dominio %}
+        dominio={{ lit(dominio, 8) }},
+{%- endif %}
+    ),
     groups_dict=GROUPS,
     aliases_dict=GROUP_ALIASES,
     list_datasets=list_datasets,

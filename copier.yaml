@@ -1,9 +1,21 @@
 # copier.yaml — Quantilica Fetcher Template
 _min_copier_version: "9.0.0"
 
+# Arquivos do próprio template que não vão para o pacote gerado.
+_exclude:
+  - "copier.yaml"
+  - "copier.yml"
+  - "render.py"
+  - "tests_template"
+  - ".git"
+  - "~*"
+  - "*.py[co]"
+  - "__pycache__"
+  - ".DS_Store"
+
 source_id:
   type: str
-  help: Identificador canônico da fonte na CLI (ex: 'ons', 'loterias', 'sigtap')
+  help: "Identificador canônico da fonte na CLI (ex: 'ons', 'loterias', 'sigtap')"
   validator: >-
     {% if not (source_id | regex_search('^[a-z0-9]+(-[a-z0-9]+)*$')) %}
     source_id deve ser minúsculo, com hífens opcionais (kebab-case)
@@ -11,42 +23,85 @@ source_id:
 
 source_name:
   type: str
-  help: Nome oficial por extenso da instituição/fonte (ex: 'Operador Nacional do Sistema Elétrico')
+  help: "Nome oficial por extenso da instituição/fonte (ex: 'Operador Nacional do Sistema Elétrico')"
 
 package_name:
   type: str
   default: "{{ source_id }}-fetcher"
-  help: Nome do pacote Python / repositório
+  help: "Nome do pacote Python / repositório"
 
 package_slug:
   type: str
   default: "{{ source_id | replace('-', '_') }}_fetcher"
-  help: Nome do módulo Python no diretório src/
+  help: "Nome do módulo Python no diretório src/"
 
 description:
   type: str
   default: "Coletor e conversor Lake Hive de dados abertos de {{ source_name }}"
-  help: Descrição resumida do pacote para pyproject.toml e README
+  help: "Descrição resumida do pacote para pyproject.toml e README"
 
 domain:
   type: str
   default: "{{ source_id }}"
-  help: Domínio temático em docs/docs/fontes/<dominio>/ (ex: 'energia', 'loterias', 'saude')
+  help: "Pasta da seção em docs/docs/fontes/<pasta>/ (ex: 'energia', 'loterias', 'saude')"
+
+# --- FetcherInfo (src/<pacote>/plugin.py): os fatos da fonte no registro de fetchers ---
+orgao:
+  type: str
+  help: "Órgão responsável pelos dados (ex: 'Instituto Nacional de Meteorologia (INMET)')"
+  validator: >-
+    {% if not orgao.strip() %}
+    orgao não pode ficar vazio
+    {% endif %}
+
+licenca:
+  type: str
+  default: "Sem licença declarada; dados públicos pela Lei 12.527/2011 (LAI) e Decreto 8.777/2016"
+  help: "Licença de uso dos dados"
+  validator: >-
+    {% if not licenca.strip() %}
+    licenca não pode ficar vazia
+    {% endif %}
+
+homepage:
+  type: str
+  help: "Página oficial da fonte (http:// ou https://)"
+  validator: >-
+    {% if not (homepage | regex_search('^https?://\\S+$')) %}
+    homepage deve começar com http:// ou https://
+    {% endif %}
+
+cadencia:
+  type: str
+  default: "monthly"
+  choices:
+    - "daily"
+    - "weekly"
+    - "monthly"
+    - "quarterly"
+    - "yearly"
+    - "irregular"
+  help: "Cadência esperada de atualização da fonte ('irregular' = sem periodicidade fixa)"
+
+dominio:
+  type: str
+  default: ""
+  help: "Domínio temático do FetcherInfo (ex: 'fiscal', 'saude', 'energia'); vazio = não informado"
 
 author_name:
   type: str
   default: "Komesu, D.K."
-  help: Nome do autor
+  help: "Nome do autor"
 
 author_email:
   type: str
   default: "daniel@dkko.me"
-  help: Email do autor
+  help: "Email do autor"
 
 has_lake:
   type: bool
   default: true
-  help: O pacote inclui conversor para o Universal Hive Parquet Lake?
+  help: "O pacote inclui conversor para o Universal Hive Parquet Lake?"
 
 protocol:
   type: str
@@ -55,4 +110,4 @@ protocol:
     - "http"
     - "ftp"
     - "ckan"
-  help: Protocolo ou padrão primário de coleta da fonte
+  help: "Protocolo ou padrão primário de coleta da fonte"
