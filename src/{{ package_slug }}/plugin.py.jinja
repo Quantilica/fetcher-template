@@ -23,9 +23,11 @@ from quantilica.core.registry import FetcherInfo
 from .catalog import GROUP_ALIASES, GROUPS, list_datasets
 from .storage import DataRepository
 
-resolve_groups = make_resolve_groups(
-    GROUPS, {alias: [canon] for alias, canon in GROUP_ALIASES.items()}
-)
+ALIASES: dict[str, list[str]] = {
+    alias: [canon] for alias, canon in GROUP_ALIASES.items()
+}
+
+resolve_groups = make_resolve_groups(GROUPS, ALIASES)
 
 
 def path_builder(
@@ -50,7 +52,7 @@ fetcher = FetcherApp(
 {%- endif %}
     ),
     groups_dict=GROUPS,
-    aliases_dict=GROUP_ALIASES,
+    aliases_dict=ALIASES,
     list_datasets=list_datasets,
     path_builder=path_builder,
     default_output=Path("/data/{{ source_id }}"),
