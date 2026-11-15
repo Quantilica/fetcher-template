@@ -1,7 +1,8 @@
-{#- Literal de string Python entre aspas duplas, com escape, quebrado em linhas curtas. -#}
-{%- macro lit(valor, recuo) -%}
+{#- Literal de string Python entre aspas duplas, com escape. Quebra em linhas curtas só quando
+    `chave="...",` não cabe em 88 colunas (o que o ruff format mantém sem reescrever). -#}
+{%- macro lit(valor, recuo, chave) -%}
 {%- set esc = valor | replace('\\', '\\\\') | replace('"', '\\"') -%}
-{%- if esc | length > 60 -%}
+{%- if esc | length > 88 - recuo - (chave | length) - 4 -%}
 (
 {{ ' ' * (recuo + 4) }}"{{ esc | wordwrap(60, false, ' "\n' ~ ' ' * (recuo + 4) ~ '"') }}"
 {{ ' ' * recuo }})
@@ -23,11 +24,9 @@ from quantilica.core.registry import FetcherInfo
 from .catalog import GROUP_ALIASES, GROUPS, list_datasets
 from .storage import DataRepository
 
-ALIASES: dict[str, list[str]] = {
-    alias: [canon] for alias, canon in GROUP_ALIASES.items()
-}
-
-resolve_groups = make_resolve_groups(GROUPS, ALIASES)
+resolve_groups = make_resolve_groups(
+    GROUPS, {alias: [canon] for alias, canon in GROUP_ALIASES.items()}
+)
 
 
 def path_builder(
@@ -39,20 +38,20 @@ def path_builder(
 
 fetcher = FetcherApp(
     name="{{ source_id }}",
-    help={{ lit(description, 4) }},
+    help={{ lit(description, 4, 'help') }},
     info=FetcherInfo(
         id="{{ source_id }}",
-        nome={{ lit(source_name, 8) }},
-        orgao={{ lit(orgao, 8) }},
-        licenca={{ lit(licenca, 8) }},
+        nome={{ lit(source_name, 8, 'nome') }},
+        orgao={{ lit(orgao, 8, 'orgao') }},
+        licenca={{ lit(licenca, 8, 'licenca') }},
         homepage="{{ homepage }}",
         cadencia="{{ cadencia }}",
 {%- if dominio %}
-        dominio={{ lit(dominio, 8) }},
+        dominio={{ lit(dominio, 8, 'dominio') }},
 {%- endif %}
     ),
     groups_dict=GROUPS,
-    aliases_dict=ALIASES,
+    aliases_dict={alias: [canon] for alias, canon in GROUP_ALIASES.items()},
     list_datasets=list_datasets,
     path_builder=path_builder,
     default_output=Path("/data/{{ source_id }}"),
