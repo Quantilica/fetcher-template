@@ -26,7 +26,7 @@ ANSWERS_FILE = ".copier-answers.yml"
 
 # Diretórios ocultos que fazem parte do pacote gerado.
 HIDDEN_DIRS = {".github", ".githooks"}
-# Arquivos e diretórios do próprio template que não vão para o pacote (espelha _exclude).
+# Do próprio template, não vão para o pacote (espelha o _exclude do copier.yaml).
 EXCLUDED_TOP = {"tests_template"}
 EXCLUDED_FILES = {"render.py", "copier.yaml", "copier.yml"}
 EXCLUDED_NAMES = {".git", ".DS_Store"}
@@ -126,8 +126,7 @@ def render_template(
             dirs[:] = [
                 d
                 for d in dirs
-                if d not in EXCLUDED_TOP
-                and (not d.startswith(".") or d in HIDDEN_DIRS)
+                if d not in EXCLUDED_TOP and (not d.startswith(".") or d in HIDDEN_DIRS)
             ]
 
         for fname in files:
