@@ -12,13 +12,30 @@ _exclude:
   - "*.py[co]"
   - "__pycache__"
   - ".DS_Store"
+  # No `copier update` os arquivos do fetcher nem são recriados: o _skip_if_exists
+  # (abaixo) só protege o que já existe, e sem isto um update criaria no fetcher
+  # os arquivos novos do template em src/ e tests/ (ex.: um teste novo). O copier
+  # renderiza este item e o separa por linhas. Mantenha a lista igual à de
+  # _skip_if_exists (tests_template confere).
+  - |-
+    {% if _copier_operation == 'update' %}
+    src/**
+    tests/**
+    docs/**
+    README.md
+    CHANGELOG.md
+    LICENSE
+    .python-version
+    pyproject.toml
+    {% endif %}
 
 # Contrato do `copier update`: depois de gerado, o código e o texto do fetcher são
 # do fetcher. O template só mantém a infraestrutura (workflows, dependabot,
 # .gitignore, hooks e o arquivo de respostas). Estes caminhos nunca são
-# sobrescritos se já existirem; o pyproject.toml está na lista porque é
-# personalizado em todo fetcher (dependências, versão, entry points, ferramentas):
-# deixá-lo de fora geraria conflito em todo update. Em contrapartida, mudança de
+# sobrescritos se já existirem (e no update também não são criados: ver _exclude).
+# O pyproject.toml está na lista porque é personalizado em todo fetcher
+# (dependências, versão, entry points, ferramentas): deixá-lo de fora geraria
+# conflito em todo update. Em contrapartida, mudança de
 # configuração de ferramenta no pyproject.toml.jinja não propaga sozinha: aplique à
 # mão nos fetchers.
 _skip_if_exists:

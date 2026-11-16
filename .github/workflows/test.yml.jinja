@@ -1,4 +1,11 @@
-{% raw %}name: Test
+{% raw %}# Notas de manutenção deste workflow (mantidas no topo para o `copier update` não
+# conflitar com as particularidades de cada repositório):
+# - Matriz: 3.12 e 3.13. O 3.14 fica fora até as dependências (polars,
+#   quantilica-*) serem validadas nele; entra na matriz quando isso acontecer.
+# - pyright: passo informativo (continue-on-error: true), porque os fetchers mais
+#   antigos ainda têm erros de tipo. Vira bloqueante (remover o continue-on-error)
+#   quando o repositório zerar os erros do pyright.
+name: Test
 
 on:
   push:
@@ -17,8 +24,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.14 fica fora até as dependências (polars, quantilica-*) serem
-        # validadas nele; entra na matriz quando isso acontecer.
         python-version: ["3.12", "3.13"]
 
     steps:
@@ -63,9 +68,6 @@ jobs:
         # Limiar: [tool.coverage.report] fail_under no pyproject (se houver).
         run: uv run --no-sync pytest --cov --cov-report=term-missing
 
-      # Informativo (continue-on-error): os fetchers mais antigos ainda têm erros
-      # de tipo. Vira bloqueante (remover o continue-on-error) quando o repo zerar
-      # os erros do pyright.
       - name: Type check with pyright
         continue-on-error: true
         run: uv run --no-sync pyright
