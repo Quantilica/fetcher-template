@@ -5,7 +5,7 @@ Renders copier template files using jinja2 directly, without needing external ne
 or the copier CLI binary. O arquivo de respostas (``.copier-answers.yml``) sai do
 próprio template (``{{ _copier_conf.answers_file }}.jinja``), exatamente como o
 ``copier copy`` o grava; este script só fornece o contexto que o copier fornece
-(``_copier_conf``, ``_copier_answers``, ``now()`` e o filtro ``to_nice_yaml``).
+(``_copier_conf``, ``_copier_answers``, e os filtros ``strftime`` e ``to_nice_yaml``).
 """
 
 from __future__ import annotations
