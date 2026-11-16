@@ -2,18 +2,56 @@
 """Offline template renderer for fetcher-template.
 
 Renders copier template files using jinja2 directly, without needing external network
-or the copier CLI binary, and generates .copier-answers.yml.
+or the copier CLI binary. O arquivo de respostas (``.copier-answers.yml``) sai do
+próprio template (``{{ _copier_conf.answers_file }}.jinja``), exatamente como o
+``copier copy`` o grava; este script só fornece o contexto que o copier fornece
+(``_copier_conf``, ``_copier_answers``, ``now()`` e o filtro ``to_nice_yaml``).
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fnmatch
+import os
+import shutil
+import subprocess
 from pathlib import Path
 
 import jinja2
+import yaml
 
 TEMPLATE_DIR = Path(__file__).resolve().parent
+ANSWERS_FILE = ".copier-answers.yml"
+
+# Diretórios ocultos que fazem parte do pacote gerado.
+HIDDEN_DIRS = {".github", ".githooks"}
+# Arquivos e diretórios do próprio template que não vão para o pacote (espelha _exclude).
+EXCLUDED_TOP = {"tests_template"}
+EXCLUDED_FILES = {"render.py", "copier.yaml", "copier.yml"}
+EXCLUDED_NAMES = {".git", ".DS_Store"}
+EXCLUDED_GLOBS = ("~*", "*.py[co]")
+
+
+def _template_commit() -> str:
+    """Referência do template para o ``_commit`` (tag, ou hash curto sem tag)."""
+    try:
+        out = subprocess.run(
+            ["git", "describe", "--tags", "--always"],
+            cwd=TEMPLATE_DIR,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return out.stdout.strip() or "unknown"
+
+
+def _to_nice_yaml(data: object) -> str:
+    return yaml.safe_dump(
+        data, default_flow_style=False, allow_unicode=True, sort_keys=True
+    )
 
 
 def render_template(
@@ -46,7 +84,7 @@ def render_template(
     )
     domain = domain or source_id
 
-    context = {
+    answers = {
         "source_id": source_id,
         "source_name": source_name,
         "package_name": package_name,
@@ -62,72 +100,59 @@ def render_template(
         "homepage": homepage,
         "cadencia": cadencia,
         "dominio": dominio,
-        "now_date": dt.date.today().isoformat(),
-        "now": lambda _tz, fmt: dt.date.today().strftime(fmt),
+    }
+    context = {
+        **answers,
+        "_copier_conf": {"answers_file": ANSWERS_FILE},
+        "_copier_answers": {
+            "_commit": _template_commit(),
+            "_src_path": str(TEMPLATE_DIR),
+            **answers,
+        },
+        "_copier_operation": "copy",
+        "now": lambda: dt.datetime.now(dt.UTC),
     }
 
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(TEMPLATE_DIR)),
         keep_trailing_newline=True,
     )
+    env.filters["to_nice_yaml"] = _to_nice_yaml
 
-    # 1. Write .copier-answers.yml
-    answers = [
-        f"_commit: v0.1.0",
-        f"_src_path: {TEMPLATE_DIR}",
-        f"author_email: {author_email}",
-        f"author_name: {author_name}",
-        f"cadencia: {cadencia}",
-        f"description: {description}",
-        f"domain: {domain}",
-        f"dominio: '{dominio}'",
-        f"has_lake: {str(has_lake).lower()}",
-        f"homepage: {homepage}",
-        f"licenca: {licenca}",
-        f"orgao: {orgao}",
-        f"package_name: {package_name}",
-        f"package_slug: {package_slug}",
-        f"protocol: {protocol}",
-        f"source_id: {source_id}",
-        f"source_name: {source_name}",
-        "",
-    ]
-    (target_dir / ".copier-answers.yml").write_text("\n".join(answers), encoding="utf-8")
-
-    # 2. Iterate template files
-    for root, _dirs, files in os.walk(TEMPLATE_DIR):
+    for root, dirs, files in os.walk(TEMPLATE_DIR):
         rel_root = Path(root).relative_to(TEMPLATE_DIR)
-        if any(part.startswith(".") for part in rel_root.parts if part != ".github"):
-            continue
-        if rel_root.parts and rel_root.parts[0] in ("tests_template", "__pycache__"):
-            continue
-        if "render.py" in files and rel_root == Path("."):
-            pass
+        dirs[:] = [d for d in dirs if d != "__pycache__"]
+        if rel_root == Path("."):
+            dirs[:] = [
+                d
+                for d in dirs
+                if d not in EXCLUDED_TOP
+                and (not d.startswith(".") or d in HIDDEN_DIRS)
+            ]
 
         for fname in files:
-            if fname in ("render.py", "copier.yaml", "copier.yml"):
+            if rel_root == Path(".") and fname in EXCLUDED_FILES:
+                continue
+            if fname in EXCLUDED_NAMES or any(
+                fnmatch.fnmatch(fname, g) for g in EXCLUDED_GLOBS
+            ):
                 continue
 
-            src_file = Path(root) / fname
             rel_path_str = str(rel_root / fname)
-
-            # Resolve template in path
-            rendered_rel_path_str = rel_path_str.replace("{{ package_slug }}", package_slug)
-            if rendered_rel_path_str.endswith(".jinja"):
-                dest_rel_path = Path(rendered_rel_path_str[:-6])
-                template = env.get_template(rel_path_str)
-                content = template.render(**context)
-                dest_file = target_dir / dest_rel_path
+            # Os nomes de arquivo também são templates ({{ package_slug }},
+            # {{ _copier_conf.answers_file }}).
+            rendered_rel = env.from_string(rel_path_str).render(**context)
+            if rendered_rel.endswith(".jinja"):
+                dest_file = target_dir / rendered_rel[: -len(".jinja")]
+                content = env.get_template(rel_path_str.replace("\\", "/")).render(
+                    **context
+                )
                 dest_file.parent.mkdir(parents=True, exist_ok=True)
                 dest_file.write_text(content, encoding="utf-8")
             else:
-                dest_file = target_dir / Path(rendered_rel_path_str)
+                dest_file = target_dir / rendered_rel
                 dest_file.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src_file, dest_file)
-
-
-import os
-import shutil
+                shutil.copy2(Path(root) / fname, dest_file)
 
 
 def main() -> None:

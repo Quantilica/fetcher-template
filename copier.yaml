@@ -13,6 +13,24 @@ _exclude:
   - "__pycache__"
   - ".DS_Store"
 
+# Contrato do `copier update`: depois de gerado, o código e o texto do fetcher são
+# do fetcher. O template só mantém a infraestrutura (workflows, dependabot,
+# .gitignore, hooks e o arquivo de respostas). Estes caminhos nunca são
+# sobrescritos se já existirem; o pyproject.toml está na lista porque é
+# personalizado em todo fetcher (dependências, versão, entry points, ferramentas):
+# deixá-lo de fora geraria conflito em todo update. Em contrapartida, mudança de
+# configuração de ferramenta no pyproject.toml.jinja não propaga sozinha: aplique à
+# mão nos fetchers.
+_skip_if_exists:
+  - "src/**"
+  - "tests/**"
+  - "docs/**"
+  - "README.md"
+  - "CHANGELOG.md"
+  - "LICENSE"
+  - ".python-version"
+  - "pyproject.toml"
+
 source_id:
   type: str
   help: "Identificador canônico da fonte na CLI (ex: 'ons', 'loterias', 'sigtap')"

@@ -20,7 +20,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
@@ -62,7 +61,21 @@ dev = [
 ]
 
 [tool.uv]
-required-version = ">=0.13"
+required-version = ">=0.9"
+
+# Índices: o uv procura em ordem e para no primeiro que tem o pacote
+# (index-strategy padrão first-index). O PyPI vem antes, então o índice
+# Quantilica (GitHub Pages, que responde 503 intermitente a pacote que não
+# hospeda) só é consultado para o que não está no PyPI (quantilica-analytics).
+# Sem [tool.uv.sources]: no workspace do monorepo quantilica-analytics é membro
+# e uma fonte de índice aqui quebraria o `uv run` da raiz.
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple/"
+
+[[tool.uv.index]]
+name = "quantilica"
+url = "https://index.quantilica.com/simple/"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
