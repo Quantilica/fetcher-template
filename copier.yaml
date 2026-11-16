@@ -145,4 +145,5 @@ protocol:
     - "http"
     - "ftp"
     - "ckan"
+    - "odata"
   help: "Protocolo ou padrão primário de coleta da fonte"
