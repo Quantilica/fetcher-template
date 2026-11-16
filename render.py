@@ -110,7 +110,6 @@ def render_template(
             **answers,
         },
         "_copier_operation": "copy",
-        "now": lambda: dt.datetime.now(dt.UTC),
     }
 
     env = jinja2.Environment(
@@ -118,6 +117,7 @@ def render_template(
         keep_trailing_newline=True,
     )
     env.filters["to_nice_yaml"] = _to_nice_yaml
+    env.filters["strftime"] = lambda fmt: dt.datetime.now(dt.UTC).strftime(fmt)
 
     for root, dirs, files in os.walk(TEMPLATE_DIR):
         rel_root = Path(root).relative_to(TEMPLATE_DIR)
